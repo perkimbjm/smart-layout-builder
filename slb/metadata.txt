@@ -1,0 +1,17 @@
+[general]
+name=Smart Layout Builder
+qgisMinimumVersion=3.34
+description=Auto layout generation, smart legend cleaning, and batch atlas export for QGIS.
+about=Smart Layout Builder makes producing balanced map layouts and batch atlas PDFs fast. Generate a layout from your project state in one click, prune the legend of irrelevant layers automatically, and export many map sheets sequentially with clear progress and cancellation. MVP scope: Auto Layout, Smart Legend Cleaner, Sequential Atlas Export.
+version=1.0.0-beta1
+author=Rasyid Ridha
+email=digitalisme.work@gmail.com
+homepage=https://github.com/perkimbjm/smart-layout-builder
+tracker=https://github.com/perkimbjm/smart-layout-builder/issues
+repository=https://github.com/perkimbjm/smart-layout-builder
+icon=resources/icons/slb_logo.svg
+experimental=True
+deprecated=False
+category=Plugins
+tags=layout,print,atlas,cartography,export
+changelog=See CHANGELOG.md

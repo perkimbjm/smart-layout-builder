@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build / packaging
+build/
+dist/
+*.zip
+
+# QGIS / Qt build artefak
+*.qm
+resources_rc.py
+slb/resources/compiled/
+
+# Spike artefak (eksperimen throwaway)
+spikes/atlas_out/
+spikes/tmp/
+spikes/s01_proof.png
+
+# Editor / OS
+.idea/
+.vscode/
+*.log
+.DS_Store
+Thumbs.db

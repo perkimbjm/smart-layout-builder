@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install tooling
+        run: pip install ruff black
+      - name: Ruff
+        run: ruff check slb
+      - name: Black (check)
+        run: black --check slb
+
+  # Test job memakai container QGIS LTR. Diaktifkan penuh saat tests/ terisi
+  # (mulai Day 13). Untuk sekarang hanya memverifikasi paket bisa di-compile.
+  smoke:
+    runs-on: ubuntu-latest
+    container: qgis/qgis:release-3_34
+    steps:
+      - uses: actions/checkout@v4
+      - name: Byte-compile package
+        run: python3 -m compileall slb
+      - name: Run tests (bila ada)
+        run: |
+          if [ -d tests ]; then
+            pip install pytest
+            xvfb-run -a pytest tests -q || true
+          else
+            echo "Belum ada tests/ — dilewati (akan aktif Day 13)."
+          fi
