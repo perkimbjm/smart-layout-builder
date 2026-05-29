@@ -205,3 +205,24 @@ Format per `plan` (Format Catatan Harian). Ditulis singkat tiap hari kerja.
 
 **Tomorrow's first move (Day 11 / Week 2 Wed):**
 - `core/legend.prune_legend()` — mode `safe` (visibility + LegendExcluded). DoD: legend cleaner buang entri layer tak-terlihat/excluded tanpa mengubah project; teruji headless.
+
+---
+
+## Day 11 — core/legend.prune_legend() mode `safe` (Week 2 Wed)
+
+**Plan:** `prune_legend(layout, project, mode="safe")` membuang entri legend untuk layer tak-terlihat (tak-tercentang) + dikecualikan-dari-legend, TANPA mengubah project. DoD: teruji headless, idempoten.
+
+**Done:**
+- `slb/core/legend.py` (baru): `prune_legend(layout, project, mode="safe") -> int`. Mode `off` → no-op; `safe` → buang node layer yang tak-terlihat **atau** ber-flag `QgsMapLayer.Private` (proxy "exclude from legend"); mode lain (mis. `extent`) → `ValidationError` (extent menyusul Day 12). Mengikuti api-design.md §4 / architecture.md §9.
+- **Kunci keamanan "tanpa mengubah project":** legend default `autoUpdateModel=True` → modelnya **berbagi** pohon dengan `project.layerTreeRoot()`. `_prune_one` mematikan auto-update dulu (QGIS lalu meng-clone pohon) sehingga hanya salinan milik legend yang disunting; `removeChildNode` tak pernah menyentuh project.
+- `_is_hidden` menelusuri ke atas (self + grup induk) via `itemVisibilityChecked()` — sebab **`itemVisibilityCheckedRecursive` absen di QGIS 3.34** (dikonfirmasi via probe). `_is_legend_excluded` cek `layer.flags() & Private`.
+- **Uji headless di QGIS 3.34 (banjir.qgz, 9 layer) → semua PASS / 0 FAIL** (6 grup uji): (T1) legend 9→8, layer tak-tercentang `Jaringan_Sungai` dibuang (count=1), `autoUpdateModel` jadi False, **project tree tak berubah**; (T2) idempoten — run kedua = 0, legend identik; (T3) mode `off` = 0, legend & autoUpdate utuh; (T4) set `Private` pada Google Terrain → prune buang 2 (hidden + private), keduanya hilang, predikat excluded False→True→False, flag dipulihkan; (T5) mode `extent`/bogus → `ValidationError`; (T6) layout tanpa legend → 0.
+- Cleanup: 3 layout uji (`SLB DAY11 *`) dihapus; **5 layout produksi `Peta_Banjarmasin_*` utuh** (before==after); project tree final == awal; flag Google Terrain dipulihkan.
+
+**Notes / surprises:**
+- `QgsMapLayer.Private` adalah proxy terbaik untuk "exclude from legend" di core API; **setting Private TIDAK menghapus node dari project layer tree** (dikonfirmasi probe: count 9→9, node tetap) → aman dipakai sebagai sinyal prune tanpa restrukturisasi project.
+- Legend `autoUpdate` **menampilkan** layer tak-tercentang (checkbox panel mengatur render, bukan inklusi legend) — itulah mengapa pembersihan ini berguna.
+- `extent_timeout_ms` di signature api-design.md sengaja **tidak** dibawa: Spike S0.2 membatalkan strategi timeout-per-layer (ganti bbox pre-filter + budget kumulatif), jadi parameter itu menyesatkan; ditangani saat implement `extent` (Day 12).
+
+**Tomorrow's first move (Day 12 / Week 2 Thu):**
+- Tambah mode `extent` (opt-in checkbox di dock): buang juga layer 0 fitur di map extent. Pakai temuan S0.2 — transform extent project→CRS layer, bbox pre-filter, cek "ada ≥1 fitur" via iterator `break` (request `NoGeometry` + subset atribut kosong), budget kumulatif + fail-open; skip raster (anggap in-extent). DoD: extent mode teruji headless, tak mengubah project.

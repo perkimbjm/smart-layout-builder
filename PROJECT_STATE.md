@@ -8,7 +8,7 @@
 **Apa ini:** Plugin QGIS untuk auto-layout peta, smart legend, dan batch atlas export.
 **Versi:** `1.0.0-beta1` (pre-alpha, MVP dalam pengerjaan)
 **QGIS minimum:** 3.34 LTR (dikonfirmasi Spike S0.1 di 3.34.11-Prizren)
-**Commit terakhir:** `e9ee111` — Day 10
+**Commit terakhir:** `b652064` (feat) — Day 11
 **Branch:** `main` (sinkron dengan `origin/main`)
 **Repo:** https://github.com/perkimbjm/smart-layout-builder
 
@@ -17,10 +17,10 @@
 ## Posisi sekarang
 
 - **Fase:** Phase 1 — MVP (Week 1–6). Phase 0 (spikes) ✅ LULUS.
-- **Minggu/Hari:** Week 2 berjalan (Day 10 selesai). **Berikutnya: Day 11 = Week 2 Rabu.**
-- **Status terakhir:** Day 10 pushed (`e9ee111`); headless test 13 PASS / 0 FAIL.
-- **Next task (Day 11):** `core/legend.prune_legend()` — mode `safe` (visibility + LegendExcluded).
-  DoD: legend cleaner buang entri layer tak-terlihat/excluded tanpa mengubah project; teruji headless.
+- **Minggu/Hari:** Week 2 berjalan (Day 11 selesai). **Berikutnya: Day 12 = Week 2 Kamis.**
+- **Status terakhir:** Day 11 pushed; headless test semua PASS / 0 FAIL (6 grup uji prune_legend).
+- **Next task (Day 12):** Tambah mode `extent` ke `prune_legend` (opt-in checkbox dock) — buang layer 0 fitur di map extent (pakai temuan S0.2: bbox pre-filter + iterator break + budget kumulatif/fail-open, skip raster).
+  DoD: extent mode teruji headless, tanpa mengubah project.
 
 ---
 
@@ -43,7 +43,7 @@ Docs perencanaan lain (arsitektur, fitur, API, dll.) ada di `docs/` — baca ses
 |------|------|--------|
 | 0 | Validation spikes (S0.1/S0.2/S0.3) | ✅ Selesai — semua GO |
 | 1 | Plumbing + first layout | ✅ Selesai (Day 4–8) |
-| 2 | Composition strategies + Smart Legend v1 | 🔄 Berjalan (Day 9–10 selesai) |
+| 2 | Composition strategies + Smart Legend v1 | 🔄 Berjalan (Day 9–11 selesai) |
 | 3 | Presets | ⬜ Belum |
 | 4 | Atlas v1 (sequential) | ⬜ Belum |
 | 5 | Atlas v2 (progress + cancel + merge) | ⬜ Belum |
@@ -63,6 +63,7 @@ Docs perencanaan lain (arsitektur, fitur, API, dll.) ada di `docs/` — baca ses
 | 8 | Dock "Generate Layout" end-to-end: input judul, status sukses, buka Designer | `47154ad` |
 | 9 | `core/strategies.py` (single_column/two_column); generate_layout delegasi komposisi via ItemSpec | `01bb71d` |
 | 10 | Selector kertas (A4/A3/Letter) + orientasi (portrait/landscape) di dock → routing strategi/ukuran | `e9ee111` |
+| 11 | `core/legend.prune_legend()` mode `safe` — buang entri legend tak-terlihat/Private tanpa mengubah project; idempoten | `b652064` |
 
 Detail lengkap tiap hari ada di [`docs/daily-log.md`](docs/daily-log.md).
 
@@ -79,6 +80,7 @@ Detail lengkap tiap hari ada di [`docs/daily-log.md`](docs/daily-log.md).
 | `errors.py` | hirarki `SLBError` → `ValidationError`/`ExportError`/`ExportCancelled`/`PresetError` |
 | `core/layout.py` | `generate_layout()` — pilih strategi by orientasi + materialize ItemSpec → 6 elemen; `PAPER_MM`; nama unik |
 | `core/strategies.py` | `ItemSpec` + fungsi murni `single_column()` (portrait) & `two_column()` (landscape) → `list[ItemSpec]` |
+| `core/legend.py` | `prune_legend(layout, project, mode)` — mode `safe`/`off`; matikan `autoUpdateModel` (clone) lalu buang node layer tak-terlihat/`Private`; idempoten, tak mengubah project. `extent` menyusul Day 12 |
 | `ui/dock.py` | `SLBDock` — input judul + selector kertas/orientasi + tombol Generate; `build_layout(title,paper,orientation)` headless vs `_open_in_designer()` GUI |
 | `io/safe_paths.py` | `user_dir`/`ensure_dir`/`atomic_write`/`safe_filename` |
 | `utils/logging.py` | `configure_logging()` idempoten ke `<profil>/SLB/logs/slb.log` |
