@@ -127,3 +127,40 @@ Format per `plan` (Format Catatan Harian). Ditulis singkat tiap hari kerja.
 
 **Tomorrow's first move (Day 7):**
 - Tambah item legend, scale bar, north arrow (pakai SVG dari `slb/resources/north_arrows/` — bundle, cek `os.path.exists` sebelum `setPicturePath`, fallback label "N"), attribution ke `generate_layout()`. DoD: 6 elemen terlihat, ukuran wajar.
+
+---
+
+## Day 7 — Legend, scale bar, north arrow, attribution
+
+**Plan:** Lengkapi `generate_layout()` jadi 6 elemen (map + title + legend + scale + north + attribution). DoD: 6 elemen terlihat, ukuran wajar, dalam batas A4.
+
+**Done:**
+- `slb/core/layout.py` (+73 baris): legend (ter-link ke map, footer kiri ~42% lebar), scale bar "Single Box" (`applyDefaultSize`, ter-link ke map, tengah footer), north arrow dari SVG bundled (`na_classic.svg`) via `_add_north_arrow()` — cek `os.path.exists` dulu (temuan S0.1: path SVG sistem absen di Windows), fallback label "N ↑" bila SVG hilang; attribution strip 7pt paling bawah. Zona footer (`_FOOTER_H_MM=42`) + attribution (`_ATTRIB_H_MM=5`) dipotong dari tinggi map.
+- 5 SVG panah utara dibundel di `slb/resources/north_arrows/` (classic, block, compass_only, modern_circle, modern_simple).
+- **Uji headless di QGIS 3.34.11 → PASS:** 6 item, legend & scale ter-link ke map, semua dalam batas A4.
+- Commit `4667326`.
+
+**Notes / surprises:**
+- North arrow termuat sebagai `QgsLayoutItemPicture` (SVG bundled ada) — fallback label tidak terpakai di mesin uji.
+
+**Tomorrow's first move (Day 8):**
+- Jadikan tombol dock "Generate Layout" end-to-end (bukan "debug"): input judul opsional, feedback sukses, buka di Designer. DoD: klik → layout dibuat dari extent kanvas + judul user → terbuka di Designer.
+
+---
+
+## Day 8 — Dock "Generate Layout" end-to-end
+
+**Plan:** Promosikan tombol debug jadi alur "Generate Layout" beneran + buka di Designer. DoD: klik → layout (judul user) dibuat dari extent kanvas → terbuka di Designer.
+
+**Done:**
+- `slb/ui/dock.py`: tombol "Generate Layout (debug)" → **"Generate Layout"**; tambah `QLineEdit` judul (placeholder; kosong → judul project / "Untitled"); label status sukus ("Layout '…' dibuka di Designer."); `build_debug_layout()` → `build_layout(title)` (tetap headless, tanpa GUI); handler `_on_generate` (build headless + `_open_in_designer` GUI, error → QMessageBox + status dikosongkan).
+- Paper/orientation **sengaja tetap** A4/portrait — selector adalah deliverable Week 2 (roadmap), tidak ditarik maju (YAGNI).
+- **Uji headless di QGIS 3.34.11 → PASS** (4 skenario, tanpa buka Designer): (1) core judul kustom "Peta Banjir Day8" → A4 210×297, 1 map/1 legend/1 scalebar + picture north + attribution, judul ada; (2) `dock.build_layout("Lewat Dock")` → masuk manager, judul ada; (3) judul kosong → fallback "Untitled"; (4) judul sama 2× → nama unik "SLB Lewat Dock (2)".
+- Project bersih: 4 layout uji dihapus; **5 layout riil user (`Peta_Banjarmasin_*`) tidak disentuh**.
+
+**Notes / surprises:**
+- `banjir.qgz` punya `title()` kosong → judul kosong jatuh ke "Untitled" (bukan judul project). Sesuai desain.
+- Project user sudah berisi 5 layout produksi; pastikan operasi SLB tidak pernah menghapus/menimpa layout di luar yang dibuatnya.
+
+**Tomorrow's first move (Day 9 / Week 2 Mon):**
+- `slb/core/strategies.py` — fungsi `two_column()` + `single_column()`; generate_layout mulai mendelegasikan komposisi ke strategi. DoD: dua strategi menghasilkan tata letak berbeda yang masuk akal, teruji headless.

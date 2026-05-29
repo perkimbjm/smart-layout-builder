@@ -21,6 +21,13 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/) dan
   Tombol "Generate Layout (debug)" di dock; pembukaan Designer dipisah dari
   pembuatan layout (`build_debug_layout` headless vs `_open_in_designer` GUI)
   agar bisa diuji tanpa membuka GUI.
+- `generate_layout()` lengkap 6 elemen (Day 7): legend & scale bar ter-link ke
+  map, north arrow dari SVG bundled (`slb/resources/north_arrows/`, cek
+  `os.path.exists` + fallback label), dan attribution strip.
+- Dock "Generate Layout" end-to-end (Day 8): input judul opsional (kosong →
+  judul project / "Untitled"), label status sukses, dan buka layout di Layout
+  Designer. `build_debug_layout` → `build_layout(title)` (tetap headless).
+  Paper/orientation tetap A4/portrait (selector dijadwalkan Week 2).
 
 ### Notes
 - Target QGIS minimum: **3.34 LTR** (dikonfirmasi via Spike S0.1 di 3.34.11).
