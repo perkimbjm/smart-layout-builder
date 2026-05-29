@@ -226,3 +226,24 @@ Format per `plan` (Format Catatan Harian). Ditulis singkat tiap hari kerja.
 
 **Tomorrow's first move (Day 12 / Week 2 Thu):**
 - Tambah mode `extent` (opt-in checkbox di dock): buang juga layer 0 fitur di map extent. Pakai temuan S0.2 — transform extent project→CRS layer, bbox pre-filter, cek "ada ≥1 fitur" via iterator `break` (request `NoGeometry` + subset atribut kosong), budget kumulatif + fail-open; skip raster (anggap in-extent). DoD: extent mode teruji headless, tak mengubah project.
+
+---
+
+## Day 12 — Smart Legend mode `extent` + opt-in checkbox (Week 2 Thu)
+
+**Plan:** Tambah mode `extent` ke `prune_legend` (opt-in checkbox dock): buang juga layer vektor 0 fitur di map extent, pakai temuan S0.2. DoD: extent mode teruji headless, tak mengubah project.
+
+**Done:**
+- `slb/core/legend.py`: mode `extent` = `safe` + buang layer vektor 0 fitur di extent peta. Implementasi mengikuti Spike S0.2 (bukan "timeout per layer"): (1) **bbox pre-filter** — transform `layer.extent()`→CRS map; tak beririsan dengan extent map → buang tanpa scan; (2) **cek ada-fitur** via iterator `break` (request `NoGeometry` + subset atribut kosong), bukan `featureCount`; (3) **budget kumulatif lintas-layer + fail-open** (`_EXTENT_BUDGET_S=2.0`) — lewat anggaran → `continue` (bukan break, agar safe-check node lain tetap jalan), simpan sisa layer; (4) **skip non-vektor** (raster dianggap in-extent). Sumber extent = `legend.linkedMap().extent()` + `.crs()`; bila tak ter-link → degrade ke safe-only. `mode` validasi diperluas (`safe`/`extent`/`off`); `extent_timeout_ms` tetap **tidak** dibawa (S0.2 membatalkannya).
+- `slb/core/layout.py`: `generate_layout(..., prune_legend_mode="safe")` kini memanggil `prune_legend` setelah materialize (api-design §3 langkah 4) — wiring agar checkbox berfungsi end-to-end. Safe-prune **on by default** (architecture.md §9).
+- `slb/ui/dock.py`: `QCheckBox` "Buang layer di luar extent peta" (unchecked default → `safe`; checked → `extent`); `build_layout(..., prune_legend_mode=None)` menurunkan mode dari checkbox (param eksplisit = override untuk test).
+- **Uji headless di QGIS 3.34 (banjir.qgz, 9 layer) → 16/16 PASS / 0 FAIL** + 1 supplemental PASS: (T0) `off` keeps 9 entri & autoUpdate utuh; (T1) `safe` 9→8 (buang `Jaringan_Sungai` tak-tercentang, simpan 5 `Sungai_*` kosong); (T2) `extent` 9→3 (buang hidden + 5 `Sungai_*` 0-fitur, **simpan** raster Google Terrain + Digitasi_Banjir + Batas_Administrasi); (T3) idempoten (run ke-2 = 0, nama stabil); (T4) budget=0 → fail-open (extent scan dilewati, hanya safe-drop=1); (T5) extent tanpa linked-map → safe-only (drop=1); (T6) `off`=0 & mode bogus → `ValidationError`; (T7) **project tree tak berubah**. Supplemental: extent jauh dari data (atas laut) → semua vektor non-kosong ikut dibuang, hanya raster tersisa (membuktikan scan in-extent benar untuk layer non-kosong, bukan cuma layer kosong).
+- Cleanup: semua layout uji (`DAY12 *`) dihapus; **5 layout produksi `Peta_Banjarmasin_*` utuh** (before==after); project tree final == awal.
+
+**Notes / surprises:**
+- Layer memory kosong (`Sungai_*`, fc=0) punya `extent()` null → bbox pre-filter mengembalikan "tak beririsan" → dibuang tanpa scan provider (gratis). Andai pre-filter lolos pun, iterator menemukan 0 fitur → tetap dibuang. Dua jalur konvergen → robust.
+- Wiring `prune_legend` ke `generate_layout` mengubah perilaku default: legend kini ter-prune `safe` (buang hidden/excluded) secara default. Ini **memang** desain produk (architecture.md §9: safe = on by default) dan tidak menambah/mengurangi jumlah **item layout** (6) — hanya entri di dalam legend.
+- Raster (Google Terrain, EPSG:3857) lolos transform CRS tanpa masalah; tetap di-skip (dianggap in-extent) sesuai S0.2.
+
+**Tomorrow's first move (Day 13 / Week 2 Fri):**
+- Idempotency + safety tests untuk legend cleaner (roadmap Week 2 Fri). Konsolidasikan/formalkan skenario uji (safe & extent) + tegaskan invarian "project tak berubah" sebagai jaring pengaman regresi sebelum masuk Week 3 (Presets).
