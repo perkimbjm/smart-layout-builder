@@ -6,9 +6,14 @@ Memakai temuan Spike S0.1: `setFont(QFont)` (bukan setFontSize) dan
 
 from __future__ import annotations
 
+import os
+
 from qgis.core import (
     QgsLayoutItemLabel,
+    QgsLayoutItemLegend,
     QgsLayoutItemMap,
+    QgsLayoutItemPicture,
+    QgsLayoutItemScaleBar,
     QgsLayoutPoint,
     QgsLayoutSize,
     QgsPrintLayout,
@@ -28,6 +33,13 @@ PAPER_MM = {
 }
 _MARGIN_MM = 10.0
 _TITLE_H_MM = 12.0
+_FOOTER_H_MM = 42.0          # zona legend/scale/north
+_ATTRIB_H_MM = 5.0
+_NORTH_SIZE_MM = 20.0
+_NORTH_ARROWS_DIR = os.path.normpath(
+    os.path.join(os.path.dirname(__file__), "..", "resources", "north_arrows")
+)
+_DEFAULT_NORTH_ARROW = "na_classic.svg"
 
 
 def _paper_size_mm(paper: str, orientation: str) -> tuple[float, float]:
@@ -77,6 +89,29 @@ def _resolve_extent(project: QgsProject, extent: QgsRectangle | None) -> QgsRect
     return rect
 
 
+def _add_north_arrow(layout, x_mm, y_mm, size_mm, mm, arrow_file=_DEFAULT_NORTH_ARROW):
+    """Tambah north arrow dari SVG bundled. Cek os.path.exists dulu (temuan S0.1:
+    path SVG sistem tidak ada di Windows). Fallback ke label 'N' bila SVG hilang."""
+    svg_path = os.path.join(_NORTH_ARROWS_DIR, arrow_file)
+    if os.path.exists(svg_path):
+        pic = QgsLayoutItemPicture(layout)
+        pic.setPicturePath(svg_path)
+        layout.addLayoutItem(pic)
+        pic.attemptMove(QgsLayoutPoint(x_mm, y_mm, mm))
+        pic.attemptResize(QgsLayoutSize(size_mm, size_mm, mm))
+        return pic
+    label = QgsLayoutItemLabel(layout)
+    label.setText("N ↑")
+    font = label.font()
+    font.setPointSize(14)
+    font.setBold(True)
+    label.setFont(font)
+    layout.addLayoutItem(label)
+    label.attemptMove(QgsLayoutPoint(x_mm, y_mm, mm))
+    label.attemptResize(QgsLayoutSize(size_mm, size_mm, mm))
+    return label
+
+
 def generate_layout(
     project: QgsProject,
     *,
@@ -113,10 +148,11 @@ def generate_layout(
     label.attemptMove(QgsLayoutPoint(_MARGIN_MM, _MARGIN_MM, mm))
     label.attemptResize(QgsLayoutSize(page_w - 2 * _MARGIN_MM, _TITLE_H_MM, mm))
 
-    # Map (mengisi sisa halaman)
+    # Map (menyisakan zona footer untuk legend/scale/north + attribution)
     map_top = _MARGIN_MM + _TITLE_H_MM + 4.0
     map_w = page_w - 2 * _MARGIN_MM
-    map_h = page_h - map_top - _MARGIN_MM
+    footer_top = page_h - _MARGIN_MM - _ATTRIB_H_MM - _FOOTER_H_MM
+    map_h = footer_top - map_top - 2.0
     map_item = QgsLayoutItemMap(layout)
     map_item.setRect(QRectF(0, 0, map_w, map_h))
     map_item.setExtent(map_extent)
@@ -124,6 +160,41 @@ def generate_layout(
     layout.addLayoutItem(map_item)
     map_item.attemptMove(QgsLayoutPoint(_MARGIN_MM, map_top, mm))
     map_item.attemptResize(QgsLayoutSize(map_w, map_h, mm))
+
+    # Legend (kiri footer), ter-link ke map
+    legend = QgsLayoutItemLegend(layout)
+    legend.setTitle("Legend")
+    legend.setLinkedMap(map_item)
+    layout.addLayoutItem(legend)
+    legend.attemptMove(QgsLayoutPoint(_MARGIN_MM, footer_top, mm))
+    legend.attemptResize(QgsLayoutSize(page_w * 0.42, _FOOTER_H_MM, mm))
+
+    # Scale bar (tengah footer), ter-link ke map
+    scale = QgsLayoutItemScaleBar(layout)
+    scale.setStyle("Single Box")
+    scale.setLinkedMap(map_item)
+    scale.applyDefaultSize()
+    layout.addLayoutItem(scale)
+    scale.attemptMove(QgsLayoutPoint(page_w * 0.5, footer_top + 6.0, mm))
+
+    # North arrow (kanan footer) — SVG bundled + fallback
+    _add_north_arrow(
+        layout,
+        page_w - _MARGIN_MM - _NORTH_SIZE_MM,
+        footer_top + 4.0,
+        _NORTH_SIZE_MM,
+        mm,
+    )
+
+    # Attribution (strip paling bawah)
+    attribution = QgsLayoutItemLabel(layout)
+    attribution.setText("Dibuat dengan Smart Layout Builder")
+    attr_font = attribution.font()
+    attr_font.setPointSize(7)
+    attribution.setFont(attr_font)
+    layout.addLayoutItem(attribution)
+    attribution.attemptMove(QgsLayoutPoint(_MARGIN_MM, page_h - _MARGIN_MM - _ATTRIB_H_MM, mm))
+    attribution.attemptResize(QgsLayoutSize(map_w, _ATTRIB_H_MM, mm))
 
     if not manager.addLayout(layout):
         # Objek C++ sudah dihapus oleh manager saat gagal -> jangan diakses lagi.
