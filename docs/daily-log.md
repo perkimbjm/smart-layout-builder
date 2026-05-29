@@ -164,3 +164,25 @@ Format per `plan` (Format Catatan Harian). Ditulis singkat tiap hari kerja.
 
 **Tomorrow's first move (Day 9 / Week 2 Mon):**
 - `slb/core/strategies.py` — fungsi `two_column()` + `single_column()`; generate_layout mulai mendelegasikan komposisi ke strategi. DoD: dua strategi menghasilkan tata letak berbeda yang masuk akal, teruji headless.
+
+---
+
+## Day 9 — core/strategies.py + delegasi komposisi (Week 2 Mon)
+
+**Plan:** `single_column()` + `two_column()` (fungsi murni → `list[ItemSpec]`); generate_layout pilih strategi by orientasi lalu materialize. DoD: dua strategi hasilkan tata letak berbeda yang masuk akal, teruji headless.
+
+**Done:**
+- `slb/core/strategies.py` (baru): `ItemSpec(TypedDict, total=False)` + `single_column(paper_w, paper_h, margin=10)` (portrait) & `two_column(...)` (landscape). Mengikuti architecture.md §10 / api-design.md §5 — dua fungsi murni, tanpa solver/kelas/registry. Geometri (TITLE/ATTRIB/GAP/NORTH/FOOTER + frac sidebar/legend) dipindah ke strategies (pemilik tata letak).
+- `single_column` **mereproduksi geometri portrait Day 8 persis** (map = 10,26,190,212 di A4) → tanpa regresi.
+- `two_column`: judul lebar penuh, peta kiri (~70%), sidebar kanan = legend atas + scale/north bawah.
+- `slb/core/layout.py` (refactor): `_select_strategy(orientation)` + `_materialize(specs)` (peta dibuat dulu agar legend/scale bisa `setLinkedMap`). Helper per-peran `_add_title/_add_map/_add_legend/_add_scale_bar/_add_north_arrow/_add_attribution` + `_place`. Konstanta geometri lama dihapus dari layout.py (kini di strategies). Signature `generate_layout` tetap.
+- **Uji headless di QGIS 3.34.11 (banjir.qgz, 9 layer) → 25 PASS / 0 FAIL:** invariant spec (6 peran, tak ada item keluar kertas, placement berbeda: legend single x=10 vs two x=143, map two lebih sempit), portrait & landscape masing-masing 6 item dengan legend+scale ter-link ke map, page size benar (210×297 / 297×210).
+- Cleanup: 2 layout uji (`SLB DAY9 *`) dihapus; **5 layout produksi `Peta_Banjarmasin_*` tidak disentuh** (diverifikasi via daftar before/after).
+- Commit `01bb71d`, pushed.
+
+**Notes / surprises:**
+- Kebetulan map width portrait≈landscape di A4 (190 vs 189–129 tergantung sidebar) → uji "beda layout" diandalkan pada **posisi legend** (kiri-bawah vs sidebar-kanan) & tinggi map, bukan lebar map saja.
+- Scale bar pakai `applyDefaultSize()` (auto-size) → hanya di-move ke posisi spec, tidak di-resize; bounds-check sengaja longgar untuk scale bar.
+
+**Tomorrow's first move (Day 10 / Week 2 Tue):**
+- Selector kertas (A4/A3/Letter) + orientasi (portrait/landscape) di dock; `build_layout`/`_on_generate` teruskan pilihan ke `generate_layout`. Core sudah routing strategi by orientasi → tinggal kabel UI. DoD: pilihan dock → strategi & ukuran kertas sesuai.

@@ -8,7 +8,7 @@
 **Apa ini:** Plugin QGIS untuk auto-layout peta, smart legend, dan batch atlas export.
 **Versi:** `1.0.0-beta1` (pre-alpha, MVP dalam pengerjaan)
 **QGIS minimum:** 3.34 LTR (dikonfirmasi Spike S0.1 di 3.34.11-Prizren)
-**Commit terakhir:** `47154ad` — Day 8
+**Commit terakhir:** `01bb71d` — Day 9
 **Branch:** `main` (sinkron dengan `origin/main`)
 **Repo:** https://github.com/perkimbjm/smart-layout-builder
 
@@ -17,11 +17,11 @@
 ## Posisi sekarang
 
 - **Fase:** Phase 1 — MVP (Week 1–6). Phase 0 (spikes) ✅ LULUS.
-- **Minggu/Hari:** Week 1 selesai (Day 4–8). **Berikutnya: Day 9 = Week 2 Senin.**
-- **Status terakhir:** Day 8 pushed; semua headless test PASS.
-- **Next task (Day 9):** `slb/core/strategies.py` — `two_column()` + `single_column()`;
-  `generate_layout` mulai mendelegasikan komposisi ke strategi.
-  DoD: dua strategi hasilkan tata letak berbeda yang masuk akal, teruji headless.
+- **Minggu/Hari:** Week 2 mulai (Day 9 selesai). **Berikutnya: Day 10 = Week 2 Selasa.**
+- **Status terakhir:** Day 9 pushed (`01bb71d`); headless test 25 PASS / 0 FAIL.
+- **Next task (Day 10):** selector kertas + orientasi di dock; generate routing ke
+  strategi yang benar (portrait→single_column, landscape→two_column sudah jalan di core).
+  DoD: user pilih kertas/orientasi di dock → layout memakai strategi sesuai pilihan.
 
 ---
 
@@ -62,6 +62,7 @@ Docs perencanaan lain (arsitektur, fitur, API, dll.) ada di `docs/` — baca ses
 | 6 | `core/layout.generate_layout()` minimal (map extent + title); jalur dock headless vs Designer | `bedd4eb` |
 | 7 | 6 elemen: legend & scale ter-link ke map, north arrow SVG bundled + fallback, attribution | `4667326` |
 | 8 | Dock "Generate Layout" end-to-end: input judul, status sukses, buka Designer | `47154ad` |
+| 9 | `core/strategies.py` (single_column/two_column); generate_layout delegasi komposisi via ItemSpec | `01bb71d` |
 
 Detail lengkap tiap hari ada di [`docs/daily-log.md`](docs/daily-log.md).
 
@@ -76,7 +77,8 @@ Detail lengkap tiap hari ada di [`docs/daily-log.md`](docs/daily-log.md).
 | `metadata.txt` | metadata plugin (qgisMinimumVersion=3.34) — author/email/repo masih placeholder |
 | `plugin.py` | lifecycle `initGui`/`unload`, toolbar/menu, toggle dock, signal cleanup |
 | `errors.py` | hirarki `SLBError` → `ValidationError`/`ExportError`/`ExportCancelled`/`PresetError` |
-| `core/layout.py` | `generate_layout()` — bangun `QgsPrintLayout` 6 elemen; `PAPER_MM`; nama unik |
+| `core/layout.py` | `generate_layout()` — pilih strategi by orientasi + materialize ItemSpec → 6 elemen; `PAPER_MM`; nama unik |
+| `core/strategies.py` | `ItemSpec` + fungsi murni `single_column()` (portrait) & `two_column()` (landscape) → `list[ItemSpec]` |
 | `ui/dock.py` | `SLBDock` — input judul + tombol Generate; `build_layout()` headless vs `_open_in_designer()` GUI |
 | `io/safe_paths.py` | `user_dir`/`ensure_dir`/`atomic_write`/`safe_filename` |
 | `utils/logging.py` | `configure_logging()` idempoten ke `<profil>/SLB/logs/slb.log` |
