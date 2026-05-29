@@ -32,6 +32,7 @@ from qgis.PyQt.QtGui import QFont
 
 from ..errors import SLBError, ValidationError
 from . import strategies
+from .legend import prune_legend
 from .strategies import ItemSpec
 
 log = logging.getLogger("slb.core.layout")
@@ -221,12 +222,15 @@ def generate_layout(
     title: str | None = None,
     extent: QgsRectangle | None = None,
     layout_name: str | None = None,
+    prune_legend_mode: str = "safe",
 ) -> QgsPrintLayout:
     """Buat QgsPrintLayout dan tambahkan ke project.
 
     Strategi penempatan dipilih dari ``orientation`` (portrait → single_column,
     landscape → two_column). `extent` opsional: bila None, dipakai gabungan
-    extent semua layer. Mengembalikan layout yang sudah ada di layoutManager().
+    extent semua layer. ``prune_legend_mode`` (``safe``/``extent``/``off``)
+    membersihkan entri legend setelah materialize (lihat ``core/legend``).
+    Mengembalikan layout yang sudah ada di layoutManager().
     """
     page_w, page_h = _paper_size_mm(paper, orientation)
     map_extent = _resolve_extent(project, extent)
@@ -242,6 +246,9 @@ def generate_layout(
     strategy = _select_strategy(orientation)
     specs = strategy(page_w, page_h)
     _materialize(layout, specs, map_extent=map_extent, title_text=title_text, mm=mm)
+
+    # Bersihkan legend (mengikuti api-design §3 langkah 4); tak mengubah project.
+    prune_legend(layout, project, mode=prune_legend_mode)
 
     if not manager.addLayout(layout):
         # Objek C++ sudah dihapus oleh manager saat gagal -> jangan diakses lagi.

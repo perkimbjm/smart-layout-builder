@@ -12,6 +12,7 @@ import logging
 
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDockWidget,
     QHBoxLayout,
@@ -70,6 +71,16 @@ class SLBDock(QDockWidget):
             "Potret → satu kolom; Lanskap → peta kiri + sidebar"
         )
 
+        # Smart Legend: opsi opt-in mode `extent` (buang layer 0 fitur di extent).
+        # Default unchecked → mode `safe`. Off by default karena scan layer
+        # geometri-berat bisa lambat saat cold-start (lihat Spike S0.2).
+        self._extent_check = QCheckBox("Buang layer di luar extent peta")
+        self._extent_check.setToolTip(
+            "Smart Legend: selain layer tersembunyi/dikecualikan, buang juga "
+            "layer vektor tanpa fitur di area peta. Lebih lambat pada layer "
+            "geometri-berat saat pertama kali (opt-in)."
+        )
+
         self._btn_generate = QPushButton("Generate Layout")
         self._btn_generate.setToolTip("Buat layout dari extent kanvas aktif lalu buka di Designer")
         self._btn_generate.clicked.connect(self._on_generate)
@@ -93,6 +104,7 @@ class SLBDock(QDockWidget):
         layout.addWidget(QLabel("Judul"))
         layout.addWidget(self._title_edit)
         layout.addLayout(selectors)
+        layout.addWidget(self._extent_check)
         layout.addWidget(self._btn_generate)
         layout.addWidget(self._status)
         layout.addStretch(1)
@@ -103,24 +115,30 @@ class SLBDock(QDockWidget):
         title: str | None = None,
         paper: str | None = None,
         orientation: str | None = None,
+        prune_legend_mode: str | None = None,
     ):
         """Headless: buat & kembalikan layout dari extent kanvas. TANPA GUI.
 
         Dipisah dari pembukaan Designer agar bisa diuji tanpa memblok event loop.
         `title` kosong/None → generate_layout memakai judul project atau "Untitled".
         `paper`/`orientation` None → diambil dari selector dock (override untuk test).
+        `prune_legend_mode` None → diturunkan dari checkbox extent (override untuk test).
         """
         from qgis.core import QgsProject
 
         from ..core.layout import generate_layout
 
         extent = self.iface.mapCanvas().extent()
+        mode = prune_legend_mode or (
+            "extent" if self._extent_check.isChecked() else "safe"
+        )
         return generate_layout(
             QgsProject.instance(),
             paper=paper or self._paper_combo.currentText(),
             orientation=orientation or self._orientation_combo.currentData(),
             title=title or None,
             extent=extent,
+            prune_legend_mode=mode,
         )
 
     def _open_in_designer(self, layout):
