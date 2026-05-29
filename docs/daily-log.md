@@ -108,3 +108,22 @@ Format per `plan` (Format Catatan Harian). Ditulis singkat tiap hari kerja.
 
 **Tomorrow's first move (Day 6):**
 - `core/layout.py` `generate_layout()` minimal (map + title) memakai temuan S0.1 (`setFont(QFont)`, `QgsUnitTypes.LayoutMillimeters`). Wire tombol debug di dock. DoD: klik → layout muncul di Layouts list dengan map (canvas extent) + title; bisa dibuka di Designer.
+
+---
+
+## Day 6 — core/layout.generate_layout() minimal
+
+**Plan:** `generate_layout()` (map extent + title) + tombol debug dock. DoD: layout muncul + bisa dibuka di Designer.
+
+**Done:**
+- `slb/core/layout.py` (baru): `generate_layout(project, *, paper, orientation, title, extent, layout_name)` → map (extent kanvas) + title bold 18pt; `PAPER_MM` A4/A3/Letter; `setFont(QFont)` + `QgsUnitTypes.LayoutMillimeters` (S0.1); validasi `ValidationError`.
+- `slb/ui/dock.py`: tombol "Generate Layout (debug)" + `build_debug_layout()` (headless) / `_open_in_designer()` (GUI) / `_on_generate_debug()` (handler).
+- **Uji headless di QGIS 3.34.11 → PASS** (tanpa GUI): A4 210×297 & A3 420×297, masing-masing 1 map + 1 label + extent set + masuk manager; nama unik; kertas invalid → ValidationError; dock path +1 layout tanpa window.
+
+**Notes / surprises (penting):**
+- **Timeout MCP sebelumnya = `iface.openLayoutDesigner()` membuka GUI yang memblok event loop.** Solusi: pisahkan pembukaan Designer dari pembuatan; uji pakai `build_debug_layout()` headless.
+- **Bug produksi ditemukan & diperbaiki:** `QgsLayoutManager.addLayout()` GAGAL **dan menghapus objek C++** bila nama duplikat (klik generate 2× dgn judul kosong → "SLB Untitled" tabrakan). Fix: `_unique_layout_name()` (sufiks ` (n)`) + cek return `addLayout` → raise `SLBError` bila gagal.
+- Audit GUI: satu-satunya pemanggilan GUI tersisa = `_open_in_designer` (sengaja, jalur user) + `QMessageBox` pada jalur error. Tidak ada GUI di `core/`.
+
+**Tomorrow's first move (Day 7):**
+- Tambah item legend, scale bar, north arrow (pakai SVG dari `slb/resources/north_arrows/` — bundle, cek `os.path.exists` sebelum `setPicturePath`, fallback label "N"), attribution ke `generate_layout()`. DoD: 6 elemen terlihat, ukuran wajar.
