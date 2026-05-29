@@ -1,6 +1,8 @@
 """SLBDock — panel dock utama.
 
 Day 8: tombol "Generate Layout" end-to-end (judul opsional → layout → Designer).
+Day 10: selector kertas (A4/A3/Letter) + orientasi (portrait/landscape); pilihan
+diteruskan ke ``generate_layout`` yang me-routing ke strategi yang sesuai.
 Widget tipis: hanya UI + sinyal; logika ada di core/ export/ presets/.
 """
 
@@ -10,7 +12,9 @@ import logging
 
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import (
+    QComboBox,
     QDockWidget,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QMessageBox,
@@ -43,7 +47,7 @@ class SLBDock(QDockWidget):
 
         body = QLabel(
             f"Versi {__version__}\n\n"
-            "Buat layout (peta A4 + judul, legend, skala, panah utara) dari "
+            "Buat layout (peta + judul, legend, skala, panah utara) dari "
             "extent kanvas aktif, lalu buka di Layout Designer."
         )
         body.setWordWrap(True)
@@ -53,6 +57,19 @@ class SLBDock(QDockWidget):
         self._title_edit.setPlaceholderText("Judul peta (kosong = judul project)")
         self._title_edit.setClearButtonEnabled(True)
 
+        # Selector kertas: teks combo = key yang dipakai core (PAPER_MM).
+        self._paper_combo = QComboBox()
+        self._paper_combo.addItems(["A4", "A3", "Letter"])
+        self._paper_combo.setToolTip("Ukuran kertas layout")
+
+        # Selector orientasi: teks Indonesia, data = key core (portrait/landscape).
+        self._orientation_combo = QComboBox()
+        self._orientation_combo.addItem("Potret", "portrait")
+        self._orientation_combo.addItem("Lanskap", "landscape")
+        self._orientation_combo.setToolTip(
+            "Potret → satu kolom; Lanskap → peta kiri + sidebar"
+        )
+
         self._btn_generate = QPushButton("Generate Layout")
         self._btn_generate.setToolTip("Buat layout dari extent kanvas aktif lalu buka di Designer")
         self._btn_generate.clicked.connect(self._on_generate)
@@ -61,20 +78,37 @@ class SLBDock(QDockWidget):
         self._status.setWordWrap(True)
         self._status.setStyleSheet("color: gray;")
 
+        selectors = QHBoxLayout()
+        paper_col = QVBoxLayout()
+        paper_col.addWidget(QLabel("Kertas"))
+        paper_col.addWidget(self._paper_combo)
+        orient_col = QVBoxLayout()
+        orient_col.addWidget(QLabel("Orientasi"))
+        orient_col.addWidget(self._orientation_combo)
+        selectors.addLayout(paper_col)
+        selectors.addLayout(orient_col)
+
         layout.addWidget(title)
         layout.addWidget(body)
         layout.addWidget(QLabel("Judul"))
         layout.addWidget(self._title_edit)
+        layout.addLayout(selectors)
         layout.addWidget(self._btn_generate)
         layout.addWidget(self._status)
         layout.addStretch(1)
         self.setWidget(container)
 
-    def build_layout(self, title: str | None = None):
+    def build_layout(
+        self,
+        title: str | None = None,
+        paper: str | None = None,
+        orientation: str | None = None,
+    ):
         """Headless: buat & kembalikan layout dari extent kanvas. TANPA GUI.
 
         Dipisah dari pembukaan Designer agar bisa diuji tanpa memblok event loop.
         `title` kosong/None → generate_layout memakai judul project atau "Untitled".
+        `paper`/`orientation` None → diambil dari selector dock (override untuk test).
         """
         from qgis.core import QgsProject
 
@@ -83,8 +117,8 @@ class SLBDock(QDockWidget):
         extent = self.iface.mapCanvas().extent()
         return generate_layout(
             QgsProject.instance(),
-            paper="A4",
-            orientation="portrait",
+            paper=paper or self._paper_combo.currentText(),
+            orientation=orientation or self._orientation_combo.currentData(),
             title=title or None,
             extent=extent,
         )
