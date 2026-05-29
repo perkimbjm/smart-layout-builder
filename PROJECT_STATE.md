@@ -8,7 +8,7 @@
 **Apa ini:** Plugin QGIS untuk auto-layout peta, smart legend, dan batch atlas export.
 **Versi:** `1.0.0-beta1` (pre-alpha, MVP dalam pengerjaan)
 **QGIS minimum:** 3.34 LTR (dikonfirmasi Spike S0.1 di 3.34.11-Prizren)
-**Commit terakhir:** `5b3db51` (feat) — Day 12
+**Commit terakhir:** `ef1974a` (test) — Day 13
 **Branch:** `main` (sinkron dengan `origin/main`)
 **Repo:** https://github.com/perkimbjm/smart-layout-builder
 
@@ -17,9 +17,9 @@
 ## Posisi sekarang
 
 - **Fase:** Phase 1 — MVP (Week 1–6). Phase 0 (spikes) ✅ LULUS.
-- **Minggu/Hari:** Week 2 berjalan (Day 12 selesai). **Berikutnya: Day 13 = Week 2 Jumat.**
-- **Status terakhir:** Day 12 pushed; headless test 16/16 PASS / 0 FAIL + 1 supplemental (mode `extent` prune_legend, wiring ke generate_layout, checkbox dock).
-- **Next task (Day 13):** Idempotency + safety tests untuk legend cleaner (roadmap Week 2 Fri) — konsolidasikan skenario uji safe & extent + tegaskan invarian "project tak berubah" sebagai jaring regresi sebelum Week 3 (Presets).
+- **Minggu/Hari:** Week 2 ✅ tuntas (Day 9–13 selesai). **Berikutnya: Day 14 = Week 3 Senin (Presets).**
+- **Status terakhir:** Day 13 committed (`ef1974a`); headless test `tests/qgis/test_legend.py` 11/11 PASS / 0 FAIL (jaring regresi legend cleaner di project terisolasi; singleton & 5 layout produksi utuh; 0 temp tersisa).
+- **Next task (Day 14):** `presets/repository.py` — list/load/save/delete preset via file JSON (CRUD round-trip, `safe_filename`, error → `PresetError`). Roadmap Week 3 Mon.
 
 ---
 
@@ -42,7 +42,7 @@ Docs perencanaan lain (arsitektur, fitur, API, dll.) ada di `docs/` — baca ses
 |------|------|--------|
 | 0 | Validation spikes (S0.1/S0.2/S0.3) | ✅ Selesai — semua GO |
 | 1 | Plumbing + first layout | ✅ Selesai (Day 4–8) |
-| 2 | Composition strategies + Smart Legend v1 | 🔄 Berjalan (Day 9–12 selesai) |
+| 2 | Composition strategies + Smart Legend v1 | ✅ Selesai (Day 9–13) |
 | 3 | Presets | ⬜ Belum |
 | 4 | Atlas v1 (sequential) | ⬜ Belum |
 | 5 | Atlas v2 (progress + cancel + merge) | ⬜ Belum |
@@ -64,6 +64,7 @@ Docs perencanaan lain (arsitektur, fitur, API, dll.) ada di `docs/` — baca ses
 | 10 | Selector kertas (A4/A3/Letter) + orientasi (portrait/landscape) di dock → routing strategi/ukuran | `e9ee111` |
 | 11 | `core/legend.prune_legend()` mode `safe` — buang entri legend tak-terlihat/Private tanpa mengubah project; idempoten | `b652064` |
 | 12 | `prune_legend` mode `extent` (bbox pre-filter + iterator break + budget/fail-open, skip raster) + wiring ke `generate_layout` + checkbox dock | `5b3db51` |
+| 13 | `tests/qgis/test_legend.py` — jaring regresi `prune_legend` (11 skenario: off/safe/extent, idempoten, budget fail-open, no-linked-map, validasi, invarian project tree) di project terisolasi; 11/11 PASS | `ef1974a` |
 
 Detail lengkap tiap hari ada di [`docs/daily-log.md`](docs/daily-log.md).
 
@@ -86,6 +87,7 @@ Detail lengkap tiap hari ada di [`docs/daily-log.md`](docs/daily-log.md).
 | `utils/logging.py` | `configure_logging()` idempoten ke `<profil>/SLB/logs/slb.log` |
 | `resources/north_arrows/` | 5 SVG panah utara (classic/block/compass_only/modern_circle/modern_simple) |
 | `resources/icons/slb_logo.svg` | ikon toolbar |
+| `tests/qgis/test_legend.py` | jaring regresi `prune_legend` (11 skenario, project terisolasi); `run()` untuk QGIS MCP + `test_*` untuk pytest-in-QGIS |
 | `core/`, `export/`, `presets/` | sebagian masih paket kosong (diisi Week 2–5) |
 
 ---
@@ -116,7 +118,7 @@ Detail lengkap tiap hari ada di [`docs/daily-log.md`](docs/daily-log.md).
 - [ ] `slb/metadata.txt`: author/email/repository masih `TODO` → isi sebelum submit Plugin Repo (Day 33).
 - [ ] `LICENSE`: perlu teks penuh GPL-3.0 sebelum rilis publik.
 - [ ] `AGENTS.md` masih untracked di git (keputusan user: commit atau tidak).
-- [ ] Belum ada suite pytest lokal; test masih manual via QGIS MCP.
+- [ ] Suite regresi pertama ada (`tests/qgis/test_legend.py`) — runnable via QGIS MCP `run()` & pytest-in-QGIS; CI `smoke` menjalankannya best-effort (`|| true`). Belum di-wire ke `pytest-qgis`/gate keras; ruff/black belum dijalankan di `tests/` (CI lint hanya `slb/`).
 
 ---
 

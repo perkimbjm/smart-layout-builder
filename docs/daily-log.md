@@ -247,3 +247,25 @@ Format per `plan` (Format Catatan Harian). Ditulis singkat tiap hari kerja.
 
 **Tomorrow's first move (Day 13 / Week 2 Fri):**
 - Idempotency + safety tests untuk legend cleaner (roadmap Week 2 Fri). Konsolidasikan/formalkan skenario uji (safe & extent) + tegaskan invarian "project tak berubah" sebagai jaring pengaman regresi sebelum masuk Week 3 (Presets).
+
+---
+
+## Day 13 — Legend cleaner regression suite (Week 2 Fri)
+
+**Plan:** Konsolidasikan skenario uji legend cleaner (safe/extent/idempotency) jadi satu suite regresi yang permanen + tegaskan invarian "project tak berubah". DoD: suite teruji headless PASS, deterministik, tak menyentuh project user.
+
+**Done:**
+- `tests/qgis/test_legend.py` (baru): jaring regresi `prune_legend`, 11 skenario `test_*` + `run()` (laporan PASS/FAIL untuk QGIS MCP/console). Lokasi sesuai `testpaths=["tests"]` (pyproject) & testing-strategy §2.4; CI `smoke` (`qgis/qgis:release-3_34` + `pytest tests`) kini aktif (best-effort, `|| true`).
+- **Kunci desain — project terisolasi:** tiap skenario membangun `QgsProject()` baru (BUKAN singleton) berisi 7 layer sintetis: 5 memory point (normal, hidden/tak-tercentang, excluded/Private, empty/0-fitur, outside/luar-extent), 1 memory point EPSG:3857 (menguji jalur transform lintas-CRS), 1 GeoTIFF 4×4 mungil (menguji skip non-vektor). Deterministik & tak mungkin menyentuh `banjir.qgz` atau 5 layout produksi.
+- Skenario: `off` no-op + autoUpdate utuh; `safe` buang 2 (hidden+excluded), simpan 5; `extent` buang 4 (+empty+outside), simpan 3 (normal+3857+raster); idempoten safe & extent (run ke-2 = 0, nama stabil); budget=0 → fail-open ke safe-only (patch `_EXTENT_BUDGET_S`); extent tanpa linked-map → safe-only; mode bogus → `ValidationError`; layout tanpa legend → 0; **invarian project tree tak berubah** (before==after); **singleton untouched** (layer & layout produksi sama before/after).
+- **Uji headless di QGIS 3.34.11 → 11/11 PASS / 0 FAIL.** Verifikasi pasca-uji: singleton tetap 9 layer + 5 layout `Peta_Banjarmasin_*`; **0 temp dir tersisa** (`slb_test_legend_*`/`slb_probe_*`).
+- Commit `ef1974a`.
+
+**Notes / surprises:**
+- Map item di project terisolasi melaporkan **CRS kosong** (`crs().authid() == ''`) → wajib `map_item.setCrs()` eksplisit + `project.setCrs()` agar logika same-CRS/transform mode `extent` terdefinisi. (Di QGIS Desktop CRS map item mengikuti project; di project lepas tidak.)
+- Layer 0-fitur → `extent().isNull()` True → bbox pre-filter langsung membuang tanpa scan provider (mengonfirmasi catatan Day 12). Layer EPSG:3857 in-extent lolos transform & scan → tetap disimpan; raster di-skip → disimpan.
+- ruff/black tak terpasang di env lokal manapun; CI lint hanya menyasar `slb/`, jadi headless PASS adalah gate otoritatif (sesuai AGENTS.md). File ditulis manual mengikuti konvensi black/ruff (line-length 100, import tersortir, hindari nama ambigu `l`).
+- **Week 2 tuntas** (Day 9–13): strategies, selector kertas/orientasi, Smart Legend safe+extent, dan jaring regresi. Siap masuk Week 3 (Presets).
+
+**Tomorrow's first move (Day 14 / Week 3 Mon):**
+- `presets/repository.py` — list/load/save/delete preset via file JSON (architecture.md / api-design.md). DoD: CRUD preset teruji (round-trip JSON), nama aman (`safe_filename`), error → `PresetError`/`ValidationError`.
