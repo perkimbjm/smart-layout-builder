@@ -186,3 +186,22 @@ Format per `plan` (Format Catatan Harian). Ditulis singkat tiap hari kerja.
 
 **Tomorrow's first move (Day 10 / Week 2 Tue):**
 - Selector kertas (A4/A3/Letter) + orientasi (portrait/landscape) di dock; `build_layout`/`_on_generate` teruskan pilihan ke `generate_layout`. Core sudah routing strategi by orientasi → tinggal kabel UI. DoD: pilihan dock → strategi & ukuran kertas sesuai.
+
+---
+
+## Day 10 — Selector kertas + orientasi di dock (Week 2 Tue)
+
+**Plan:** Tambah selector kertas (A4/A3/Letter) + orientasi (portrait/landscape) di dock; teruskan pilihan ke `generate_layout`. DoD: pilihan dock → strategi & ukuran kertas sesuai.
+
+**Done:**
+- `slb/ui/dock.py`: dua `QComboBox` — kertas (`addItems(["A4","A3","Letter"])`, teks = key core) & orientasi (`addItem("Potret","portrait")` / `addItem("Lanskap","landscape")`, teks Indonesia, `currentData()` = key core). Diletakkan berdampingan via `QHBoxLayout` (dua kolom berlabel).
+- `build_layout(title=None, paper=None, orientation=None)`: `paper`/`orientation` kosong → diambil dari combo (`currentText()` / `currentData()`); param eksplisit = override (untuk test). `_on_generate` tidak berubah (paper/orientasi otomatis dari combo). Murni kabel UI — core routing strategi by orientasi sudah ada sejak Day 9.
+- **Uji headless di QGIS 3.34.11 (banjir.qgz) → 13 PASS / 0 FAIL:** default combo A4/portrait; (A) combo default → A4 portrait single_column (legend x=10, 6 item); (B) combo A3+landscape → 420×297 two_column (legend di sidebar x>100); (C) combo Letter+portrait → 215.9×279.4 single_column; (D) override paper/orientation menang atas combo (combo A4/portrait, override A3/landscape → 420×297 two_column).
+- Cleanup: 4 layout uji (`SLB DAY10 *`) dihapus; project balik ke kondisi awal; **5 layout produksi `Peta_Banjarmasin_*` utuh** (diverifikasi before==after).
+
+**Notes / surprises:**
+- Orientasi pakai `userData` (`currentData()`) agar label UI bisa Indonesia ("Potret"/"Lanskap") tanpa mengubah key yang dikirim ke core ("portrait"/"landscape").
+- Teks combo kertas sengaja = key `PAPER_MM` (A4/A3/Letter) → tidak perlu mapping; bila kelak butuh label lokal, ikuti pola `userData` orientasi.
+
+**Tomorrow's first move (Day 11 / Week 2 Wed):**
+- `core/legend.prune_legend()` — mode `safe` (visibility + LegendExcluded). DoD: legend cleaner buang entri layer tak-terlihat/excluded tanpa mengubah project; teruji headless.

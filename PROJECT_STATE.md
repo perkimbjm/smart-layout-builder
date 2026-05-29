@@ -8,7 +8,7 @@
 **Apa ini:** Plugin QGIS untuk auto-layout peta, smart legend, dan batch atlas export.
 **Versi:** `1.0.0-beta1` (pre-alpha, MVP dalam pengerjaan)
 **QGIS minimum:** 3.34 LTR (dikonfirmasi Spike S0.1 di 3.34.11-Prizren)
-**Commit terakhir:** `01bb71d` — Day 9
+**Commit terakhir:** `e9ee111` — Day 10
 **Branch:** `main` (sinkron dengan `origin/main`)
 **Repo:** https://github.com/perkimbjm/smart-layout-builder
 
@@ -17,11 +17,10 @@
 ## Posisi sekarang
 
 - **Fase:** Phase 1 — MVP (Week 1–6). Phase 0 (spikes) ✅ LULUS.
-- **Minggu/Hari:** Week 2 mulai (Day 9 selesai). **Berikutnya: Day 10 = Week 2 Selasa.**
-- **Status terakhir:** Day 9 pushed (`01bb71d`); headless test 25 PASS / 0 FAIL.
-- **Next task (Day 10):** selector kertas + orientasi di dock; generate routing ke
-  strategi yang benar (portrait→single_column, landscape→two_column sudah jalan di core).
-  DoD: user pilih kertas/orientasi di dock → layout memakai strategi sesuai pilihan.
+- **Minggu/Hari:** Week 2 berjalan (Day 10 selesai). **Berikutnya: Day 11 = Week 2 Rabu.**
+- **Status terakhir:** Day 10 pushed (`e9ee111`); headless test 13 PASS / 0 FAIL.
+- **Next task (Day 11):** `core/legend.prune_legend()` — mode `safe` (visibility + LegendExcluded).
+  DoD: legend cleaner buang entri layer tak-terlihat/excluded tanpa mengubah project; teruji headless.
 
 ---
 
@@ -44,7 +43,7 @@ Docs perencanaan lain (arsitektur, fitur, API, dll.) ada di `docs/` — baca ses
 |------|------|--------|
 | 0 | Validation spikes (S0.1/S0.2/S0.3) | ✅ Selesai — semua GO |
 | 1 | Plumbing + first layout | ✅ Selesai (Day 4–8) |
-| 2 | Composition strategies + Smart Legend v1 | ⏳ Berikutnya (mulai Day 9) |
+| 2 | Composition strategies + Smart Legend v1 | 🔄 Berjalan (Day 9–10 selesai) |
 | 3 | Presets | ⬜ Belum |
 | 4 | Atlas v1 (sequential) | ⬜ Belum |
 | 5 | Atlas v2 (progress + cancel + merge) | ⬜ Belum |
@@ -63,6 +62,7 @@ Docs perencanaan lain (arsitektur, fitur, API, dll.) ada di `docs/` — baca ses
 | 7 | 6 elemen: legend & scale ter-link ke map, north arrow SVG bundled + fallback, attribution | `4667326` |
 | 8 | Dock "Generate Layout" end-to-end: input judul, status sukses, buka Designer | `47154ad` |
 | 9 | `core/strategies.py` (single_column/two_column); generate_layout delegasi komposisi via ItemSpec | `01bb71d` |
+| 10 | Selector kertas (A4/A3/Letter) + orientasi (portrait/landscape) di dock → routing strategi/ukuran | `e9ee111` |
 
 Detail lengkap tiap hari ada di [`docs/daily-log.md`](docs/daily-log.md).
 
@@ -79,7 +79,7 @@ Detail lengkap tiap hari ada di [`docs/daily-log.md`](docs/daily-log.md).
 | `errors.py` | hirarki `SLBError` → `ValidationError`/`ExportError`/`ExportCancelled`/`PresetError` |
 | `core/layout.py` | `generate_layout()` — pilih strategi by orientasi + materialize ItemSpec → 6 elemen; `PAPER_MM`; nama unik |
 | `core/strategies.py` | `ItemSpec` + fungsi murni `single_column()` (portrait) & `two_column()` (landscape) → `list[ItemSpec]` |
-| `ui/dock.py` | `SLBDock` — input judul + tombol Generate; `build_layout()` headless vs `_open_in_designer()` GUI |
+| `ui/dock.py` | `SLBDock` — input judul + selector kertas/orientasi + tombol Generate; `build_layout(title,paper,orientation)` headless vs `_open_in_designer()` GUI |
 | `io/safe_paths.py` | `user_dir`/`ensure_dir`/`atomic_write`/`safe_filename` |
 | `utils/logging.py` | `configure_logging()` idempoten ke `<profil>/SLB/logs/slb.log` |
 | `resources/north_arrows/` | 5 SVG panah utara (classic/block/compass_only/modern_circle/modern_simple) |
