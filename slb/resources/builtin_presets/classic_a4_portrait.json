@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "name": "Classic A4 Portrait",
+  "paper": "A4",
+  "orientation": "portrait",
+  "strategy": "single_column",
+  "items": [
+    {
+      "role": "title",
+      "anchor": "top",
+      "h_mm": 12,
+      "style": {"font_size_pt": 18, "weight": "bold"},
+      "binding": "[%@project_title%]"
+    },
+    {"role": "map", "fill": "center"},
+    {
+      "role": "legend",
+      "anchor": "bottom-left",
+      "w_mm": 80,
+      "h_mm": 42,
+      "style": {"columns": 1}
+    },
+    {
+      "role": "scale_bar",
+      "anchor": "bottom",
+      "h_mm": 10,
+      "style": {"units": "auto", "segments": 4}
+    },
+    {
+      "role": "north_arrow",
+      "anchor": "bottom-right",
+      "w_mm": 20,
+      "h_mm": 20
+    },
+    {
+      "role": "attribution",
+      "anchor": "bottom",
+      "h_mm": 5,
+      "style": {"font_size_pt": 7}
+    }
+  ]
+}

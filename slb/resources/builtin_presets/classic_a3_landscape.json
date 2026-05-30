@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "name": "Classic A3 Landscape",
+  "paper": "A3",
+  "orientation": "landscape",
+  "strategy": "two_column",
+  "items": [
+    {
+      "role": "title",
+      "anchor": "top",
+      "h_mm": 12,
+      "style": {"font_size_pt": 22, "weight": "bold"},
+      "binding": "[%@project_title%]"
+    },
+    {"role": "map", "fill": "center"},
+    {
+      "role": "legend",
+      "anchor": "top-right",
+      "w_mm": 84,
+      "h_mm": 130,
+      "style": {"columns": 1}
+    },
+    {
+      "role": "scale_bar",
+      "anchor": "bottom-right",
+      "w_mm": 84,
+      "h_mm": 10,
+      "style": {"units": "auto", "segments": 4}
+    },
+    {
+      "role": "north_arrow",
+      "anchor": "bottom-right",
+      "w_mm": 24,
+      "h_mm": 24
+    },
+    {
+      "role": "attribution",
+      "anchor": "bottom",
+      "h_mm": 5,
+      "style": {"font_size_pt": 7}
+    }
+  ]
+}
