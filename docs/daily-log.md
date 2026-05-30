@@ -269,3 +269,25 @@ Format per `plan` (Format Catatan Harian). Ditulis singkat tiap hari kerja.
 
 **Tomorrow's first move (Day 14 / Week 3 Mon):**
 - `presets/repository.py` — list/load/save/delete preset via file JSON (architecture.md / api-design.md). DoD: CRUD preset teruji (round-trip JSON), nama aman (`safe_filename`), error → `PresetError`/`ValidationError`.
+
+---
+
+## Day 14 — presets/repository.py CRUD JSON (Week 3 Mon)
+
+**Plan:** `presets/repository.py` — `list_presets/load_preset/save_preset/delete_preset` ke `<profil>/SLB/presets/*.json`. Validasi minimal sesuai api-design.md §9 (key wajib `name`/`paper`/`orientation`/`items`, `schema==1` bila ada), `safe_filename` untuk nama file, atomic write, semua error → `PresetError`. DoD: CRUD teruji headless, round-trip JSON, nama aman.
+
+**Done:**
+- `slb/presets/repository.py` (baru): empat fungsi publik + `PresetMeta` (TypedDict: `name`/`path`/`paper`/`orientation`) + helper `presets_dir()` (modul-level, sengaja agar test bisa monkey-patch satu titik). Validasi terpusat di `_validate(data)` — minimal sesuai api-design.md §9 (tidak men-enforce aturan item-spec database-schema.md §4.3; itu beban materializer, YAGNI Day 14). `_validate` **tak memutasi** dict caller (immutability rule); `data.get("schema", 1)` membuat schema opsional (round-trip preserves absence). Storage via `atomic_write` (mencegah file korup) dan `safe_filename` (kunci dengan karakter terlarang Windows tetap menghasilkan path sah). `list_presets()` skip diam-diam file yang gagal parse/validasi → UI dropdown tetap responsif walau ada satu file rusak; `load_preset()` file yang sama tetap raise dengan detail parser.
+- `tests/qgis/test_presets.py` (baru): 18 skenario `test_*` + `run()` (lapor PASS/FAIL untuk QGIS MCP/console). Isolasi via context manager `_isolated_presets_dir()` — `tempfile.mkdtemp` + monkey-patch `repomod.presets_dir`, restore di `finally` (user profile `<profil>/SLB/presets/` **tak pernah** tersentuh meski test raise). Sample preset mirror database-schema.md §4 (6 item: title/map/legend/scale_bar/north_arrow/attribution). Skenario: roundtrip; save path di tmpdir + parse balik = input; atomic tanpa `.tmp` sisa; list sorted by stem + metadata benar; list empty; list skip-corrupt (good + garbage + incomplete → hanya good); load missing/garbage/missing-key/bad-schema → `PresetError` (string+hint informatif); save tolak missing-key (no file written), non-dict, schema!=1; save terima dict tanpa schema (default 1, tak dimutasi); delete + delete-missing; `safe_filename` digunakan (key dengan `/\:*?"<>|` tetap bisa di-load dengan key yang sama); guard restorasi `presets_dir` setelah fixture exit.
+- **Uji headless: 18/18 PASS / 0 FAIL** via Python 3.10.6 lokal standalone runner. QGIS MCP **offline** saat run (`Could not connect to Qgis` × 2) → repository ini zero-PyQGIS (hanya stdlib + `io.safe_paths` yang import qgis lazily di dalam `user_dir()`, tak terpanggil saat `presets_dir` di-patch), jadi gate Python lokal otoritatif. Re-run di QGIS MCP saat tersedia tinggal `exec(open(...).read())` + `run()` tanpa modifikasi.
+- Commit `4a51424`.
+
+**Notes / surprises:**
+- api-design.md §9 ("validation is minimal") vs database-schema.md §4.3 (aturan item-spec: map exactly-one, anchor/fill mutual exclusion) — saya pilih §9 sebagai kontrak Day 14 karena: (a) tanpa materializer preset→layout, validasi item-spec belum punya konsumen; (b) KISS/YAGNI; (c) §9 adalah API contract yang lebih sempit. Aturan item-spec lebih dalam akan tinggal di materializer saat `generate_layout(preset=...)` di-wire.
+- `_validate` mengembalikan dict caller apa adanya (bukan copy) → `save_preset(name, data)` lalu `load_preset(name)` setara `data` walau caller-side modifikasi setelahnya tak terpengaruh on-disk (json telah ditulis). Penting: kami **tidak** menambahkan `schema=1` saat schema absen — round-trip preserves absence. Ini sengaja: caller (Day 15 defaults installer) akan selalu menyertakan schema; fungsi ini tidak mendiktekan shape.
+- Test sample `_sample_preset()` di-build per-pemanggilan (bukan modul-level konstanta) → mutasi (mis. `data.pop("items")` di test_load_missing_required_key) tak bocor lintas skenario.
+- Pola dua titik patch (`presets_dir` modul-level dipakai `_preset_path` + `list_presets`) terbukti cukup; saya hindari pendekatan "patch `user_dir`" karena `presets_dir` adalah batas natural (api-design.md §9: "JSON files in ~/.qgis/SLB/presets/").
+- Tempdir verified bersih pasca-run (no leftover `slb_test_presets_*` di `%TEMP%`); user `<profil>/SLB/presets/` tak tersentuh (fixture patch presets_dir penuh, tak pernah memanggil `user_dir()` selama test).
+
+**Tomorrow's first move (Day 15 / Week 3 Tue):**
+- `slb/resources/builtin_presets/classic_a4_portrait.json` + `classic_a3_landscape.json` (mirror database-schema.md §4 shape) + `slb/presets/defaults.py` `ensure_defaults_installed()` — copy bundled → user dir saat first-run, **jangan timpa** file user yang sudah ada (check by stem). Idempoten (run kedua = no-op). Roadmap Week 3 Tue.
