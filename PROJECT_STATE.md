@@ -8,7 +8,7 @@
 **Apa ini:** Plugin QGIS untuk auto-layout peta, smart legend, dan batch atlas export.
 **Versi:** `1.0.0-beta1` (pre-alpha, MVP dalam pengerjaan)
 **QGIS minimum:** 3.34 LTR (dikonfirmasi Spike S0.1 di 3.34.11-Prizren)
-**Commit terakhir:** `4a51424` (feat) — Day 14
+**Commit terakhir:** `8056be4` (feat) — Day 15
 **Branch:** `main` (sinkron dengan `origin/main`)
 **Repo:** https://github.com/perkimbjm/smart-layout-builder
 
@@ -17,9 +17,9 @@
 ## Posisi sekarang
 
 - **Fase:** Phase 1 — MVP (Week 1–6). Phase 0 (spikes) ✅ LULUS.
-- **Minggu/Hari:** Week 3 mulai (Day 14 selesai). **Berikutnya: Day 15 = Week 3 Selasa (bundled presets + `defaults.ensure_defaults_installed`).**
-- **Status terakhir:** Day 14 committed (`4a51424`); `tests/qgis/test_presets.py` 18/18 PASS / 0 FAIL (CRUD JSON di tmpdir terisolasi; modul pure-stdlib + `io.safe_paths`; QGIS MCP offline saat run → re-run di MCP dijadwalkan saat tersedia, presets/ user profile tak tersentuh karena `presets_dir` di-patch).
-- **Next task (Day 15):** bundled presets di `slb/resources/builtin_presets/` (`classic_a4_portrait.json`, `classic_a3_landscape.json`) + `presets/defaults.ensure_defaults_installed()` (copy ke `<profil>/SLB/presets/` saat first-run; **jangan** timpa file user yang sudah ada). Roadmap Week 3 Tue.
+- **Minggu/Hari:** Week 3 berjalan (Day 15 selesai). **Berikutnya: Day 16 = Week 3 Rabu (dock preset dropdown + Save/Save As/Delete buttons + wiring `ensure_defaults_installed()` ke `plugin.initGui`).**
+- **Status terakhir:** Day 15 committed (`8056be4`) & pushed. Total 42/42 PASS via QGIS MCP: `test_defaults.py` 13/13 (first-run install, non-overwrite user files, idempotency, partial overlap, missing/empty bundled dir, real bundled JSONs valid + load_preset-able), `test_presets.py` 18/18 regression-free, `test_legend.py` 11/11 regression-free. User `<profil>/SLB/presets/` tetap kosong setelah run (monkey-patch `presets_dir` & `bundled_dir` solid); 0 leftover temp dir.
+- **Next task (Day 16):** `slb/ui/dock.py` — preset dropdown (`QComboBox` populated dari `list_presets()`) + tombol Save/Save As/Delete; wire `ensure_defaults_installed()` di `plugin.initGui()` (api-design.md §13) supaya dropdown punya isi saat first-run. Roadmap Week 3 Wed.
 
 ---
 
@@ -43,7 +43,7 @@ Docs perencanaan lain (arsitektur, fitur, API, dll.) ada di `docs/` — baca ses
 | 0 | Validation spikes (S0.1/S0.2/S0.3) | ✅ Selesai — semua GO |
 | 1 | Plumbing + first layout | ✅ Selesai (Day 4–8) |
 | 2 | Composition strategies + Smart Legend v1 | ✅ Selesai (Day 9–13) |
-| 3 | Presets | 🟡 Berjalan (Day 14 selesai) |
+| 3 | Presets | 🟡 Berjalan (Day 15 selesai) |
 | 4 | Atlas v1 (sequential) | ⬜ Belum |
 | 5 | Atlas v2 (progress + cancel + merge) | ⬜ Belum |
 | 6 | Polish + docs + package → `1.0.0-beta1` | ⬜ Belum |
@@ -66,6 +66,7 @@ Docs perencanaan lain (arsitektur, fitur, API, dll.) ada di `docs/` — baca ses
 | 12 | `prune_legend` mode `extent` (bbox pre-filter + iterator break + budget/fail-open, skip raster) + wiring ke `generate_layout` + checkbox dock | `5b3db51` |
 | 13 | `tests/qgis/test_legend.py` — jaring regresi `prune_legend` (11 skenario: off/safe/extent, idempoten, budget fail-open, no-linked-map, validasi, invarian project tree) di project terisolasi; 11/11 PASS | `ef1974a` |
 | 14 | `presets/repository.py` — CRUD JSON (list/load/save/delete) di `<profil>/SLB/presets/`, validasi minimal (api-design.md §9), `safe_filename` untuk storage, atomic write, error → `PresetError`. `tests/qgis/test_presets.py` 18 skenario di tmpdir terisolasi → 18/18 PASS | `4a51424` |
+| 15 | `slb/resources/builtin_presets/classic_a4_portrait.json` + `classic_a3_landscape.json` (mirror database-schema.md §4: `schema=1`, exactly-one `map` item) + `presets/defaults.ensure_defaults_installed()` — copy bundled ke `<profil>/SLB/presets/` saat first-run, **tak pernah** timpa file user (database-schema.md §5), idempoten, I/O error per-file di-log dan dilewati. `tests/qgis/test_defaults.py` 13 skenario (10 isolated + 3 real-bundled) → 13/13 PASS, total 42/42 PASS via QGIS MCP. | `8056be4` |
 
 Detail lengkap tiap hari ada di [`docs/daily-log.md`](docs/daily-log.md).
 
@@ -89,10 +90,14 @@ Detail lengkap tiap hari ada di [`docs/daily-log.md`](docs/daily-log.md).
 | `resources/north_arrows/` | 5 SVG panah utara (classic/block/compass_only/modern_circle/modern_simple) |
 | `resources/icons/slb_logo.svg` | ikon toolbar |
 | `presets/repository.py` | `list_presets()`/`load_preset()`/`save_preset()`/`delete_preset()` — JSON per preset di `<profil>/SLB/presets/`; validasi minimal (key wajib `name`/`paper`/`orientation`/`items`, `schema==1` bila ada); `safe_filename` untuk storage; `atomic_write` (tanpa file `.tmp` tersisa); semua error → `PresetError` dengan `hint` |
+| `presets/defaults.py` | `bundled_dir()` → `slb/resources/builtin_presets/` (read-only); `ensure_defaults_installed()` → copy bundled `*.json` ke `repository.presets_dir()` saat belum ada; **tak pernah** menimpa file user (database-schema.md §5); idempoten; I/O error per-file di-log dan dilewati supaya `initGui` tidak pernah gagal karena defaults |
+| `resources/builtin_presets/classic_a4_portrait.json` | preset bawaan A4 portrait single_column (6 item lengkap: title/map/legend/scale_bar/north_arrow/attribution) |
+| `resources/builtin_presets/classic_a3_landscape.json` | preset bawaan A3 landscape two_column (sidebar kanan: legend top-right + scale bottom-right + north-arrow bottom-right) |
 | `tests/qgis/test_legend.py` | jaring regresi `prune_legend` (11 skenario, project terisolasi); `run()` untuk QGIS MCP + `test_*` untuk pytest-in-QGIS |
 | `tests/qgis/test_presets.py` | jaring regresi `presets/repository` (18 skenario di tmpdir terisolasi via patch `repomod.presets_dir`): roundtrip, list sorted/skip-corrupt, missing/invalid → `PresetError`, schema opsional, `safe_filename`, atomic; pure-stdlib (tak butuh QGIS) |
+| `tests/qgis/test_defaults.py` | jaring regresi `presets/defaults` (13 skenario; 10 di tmpdir terisolasi via patch `bundled_dir` + `presets_dir`, 3 di real-bundled): first-run copy, idempotency, jangan-timpa user file, partial overlap, missing/empty bundled dir, non-JSON di-skip, copied files load-able, count return correctness; pure-stdlib |
 | `core/`, `export/` | sebagian masih paket kosong (diisi Week 4–5) |
-| `presets/` | `repository.py` (Day 14); `defaults.py` belum (Day 15) |
+| `presets/` | `repository.py` (Day 14) + `defaults.py` (Day 15). Wiring ke `plugin.initGui()` belum (Day 16). |
 
 ---
 
@@ -122,7 +127,8 @@ Detail lengkap tiap hari ada di [`docs/daily-log.md`](docs/daily-log.md).
 - [ ] `slb/metadata.txt`: author/email/repository masih `TODO` → isi sebelum submit Plugin Repo (Day 33).
 - [ ] `LICENSE`: perlu teks penuh GPL-3.0 sebelum rilis publik.
 - [ ] `AGENTS.md` masih untracked di git (keputusan user: commit atau tidak).
-- [ ] Suite regresi pertama ada (`tests/qgis/test_legend.py`) — runnable via QGIS MCP `run()` & pytest-in-QGIS; CI `smoke` menjalankannya best-effort (`|| true`). Belum di-wire ke `pytest-qgis`/gate keras; ruff/black belum dijalankan di `tests/` (CI lint hanya `slb/`).
+- [ ] Suite regresi (`tests/qgis/test_legend.py`, `test_presets.py`, `test_defaults.py`) runnable via QGIS MCP `run()` & pytest-in-QGIS; CI `smoke` menjalankannya best-effort (`|| true`). Belum di-wire ke `pytest-qgis`/gate keras; ruff/black belum dijalankan di `tests/` (CI lint hanya `slb/`).
+- [ ] `ensure_defaults_installed()` belum dipanggil dari `plugin.initGui()` — wiring direncanakan Day 16 bersama dock preset dropdown.
 
 ---
 
